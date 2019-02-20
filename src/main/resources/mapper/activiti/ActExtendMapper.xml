@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.qh.modules.activiti.dao.ActExtendDao">
+    <!--更新当前操作流程的业务表信息-->
+    <update id="updateBusInfo" parameterType="map">
+        update ${tableName}
+        <set>
+            <if test="instanceId != null">instance_id= #{instanceId}, </if>
+            <if test="defid != null">defid= #{defid}, </if>
+            <if test="startUserId!= null">start_user_id= #{startUserId}, </if>
+            <if test="code != null">code= #{code}, </if>
+            <if test="updateTime != null">update_time= #{updateTime}, </if>
+            <if test="updateId != null">update_id= #{updateId}, </if>
+            <if test="startTime != null">start_time= #{startTime}, </if>
+            <if test="status != null">status = #{status}, </if>
+            <if test="actResult != null">act_result = #{actResult}, </if>
+        </set>
+        where ${pkName} =#{id}
+    </update>
+    <!--更新当前操作流程的业务表在审批过程中可更改的信息-->
+    <update id="updateChangeBusInfo" parameterType="map">
+        update ${tableName}
+        <set>
+            <foreach collection="fields" index="key" item="filed" separator=",">
+                ${filed.fieldName} = #{filed.fieldValue}
+            </foreach>
+            <if test="instanceId != null">instance_id= #{instanceId}</if>
+        </set>
+        where  ${pkName} =#{id}
+    </update>
+    <!--根据流程key 获取业务可用的流程-->
+    <select id="queryFlowsByActKey" resultType="java.util.Map">
+        select
+            ID_ defid,
+            NAME_ name,
+            DEPLOYMENT_ID_ deploymentId,
+            DESCRIPTION_ description
+        from act_re_procdef
+        where DEPLOYMENT_ID_ in (
+          select
+             act_re_model.DEPLOYMENT_ID_
+          from act_re_model
+          where act_re_model.KEY_  = #{actKey}
+        )
+    </select>
+
+    <!--根据节点id分页查询可以选择的审批人-->
+    <select id="userWindowPage" resultType="com.qh.modules.sys.entity.UserEntity">
+        select
+            DISTINCT user_name, u.id,
+            (select name from sys_organ o where o.id = u.bapid) as bapName,
+            (select name from sys_organ o where o.id = u.baid) as baName
+        from sys_user u,
+        (select user_type, nu.id as nodeUserId, ns.node_type  from extend_act_nodeuser nu, extend_act_nodeset ns where ns.node_id  = nu.node_id and nu.node_id = #{nodeId}) nodeuser
+        where (
+            (user_type = '1' and nodeUserId = u.id)
+            or (user_type = '2' and u.id in (select user_id from sys_user_role ur where ur.role_id = nodeUserId))
+            or (user_type = '3' and u.baid  = nodeUserId)
+        )
+        <if test="userName != null and userName != ''">
+            and user_name like concat('%', #{userName}, '%')
+        </if>
+    </select>
+    <!--转办变更人选择-->
+    <select id="turnWindowList" resultType="com.qh.modules.sys.entity.UserEntity">
+        select
+            user_name, id,
+        (select name from sys_organ o where o.id = u.bapid) as bapName,
+        (select name from sys_organ o where o.id = u.baid) as baName
+        from sys_user u
+        where 1=1
+        <if test="userName != null and userName != ''">
+            and user_name like concat('%', #{userName}, '%')
+        </if>
+    </select>
+    <!--流程根据业务id查询业务信息-->
+    <select id="queryBusiByBusId" resultType="java.util.Map">
+        select * from ${tableName} where ${pkName} =#{id}
+    </select>
+    <!--我的待办列表-->
+    <select id="findMyUpcomingPage" resultType="com.qh.modules.activiti.dto.ProcessTaskDto">
+        SELECT a.NAME_ AS taskName, a.CREATE_TIME_ AS createTime, a.ID_ AS taskId, a.PROC_INST_ID_ as instanceId, fb.defid AS defId,
+        fb.code, fb.act_key as actKey, fb.bus_id AS busId,
+        (SELECT name FROM extend_act_business ab WHERE fb.act_key = ab.act_key) AS busName,
+        (SELECT user_name FROM sys_user u WHERE u.id = fb.start_user_Id) AS startUserName,
+        (SELECT user_name FROM sys_user u WHERE u.id =a.ASSIGNEE_) AS dealName,
+		(SELECT node_type FROM extend_act_nodeset ns WHERE ns.defid=fb.defid) AS nodeType
+        FROM extend_act_flowbus fb, act_ru_task a
+        WHERE a.PROC_INST_ID_ = fb.instance_id
+        <if test="dealId != null and dealId != '' ">
+            AND ASSIGNEE_ = #{dealId}
+        </if>
+        <if test="code != null and code != '' ">
+            AND fb.code LIKE concat('%',#{code},'%')
+        </if>
+        <if test="busId != null and busId != '' ">
+            AND fb.bus_id = #{busId}
+        </if>
+        ORDER BY a.CREATE_TIME_ DESC
+    </select>
+    <!--我的已办列表-->
+    <select id="findMyDoneList" resultType="com.qh.modules.activiti.dto.ProcessTaskDto">
+        select a.create_time, a.deal_time, a.bus_id as busId, a.def_id as defId, a.instance_id as instanceId, a.task_id as taskId,
+        a.task_Name as taskName, a.app_opinion as remark, fb.code, fb.status as status, fb.act_key,
+        (select name from extend_act_business ab where fb.act_key = ab.act_key) as busName,
+        (select user_name from sys_user u where u.id = fb.start_user_Id) as startUserName,
+        (select user_name from sys_user u where u.id  = a.deal_id) as dealName,
+        (select user_name from sys_user u where u.id = a.advance_id) as advanceName,
+        (select node_type from extend_act_nodeset ns where ns.defid = fb.defid) as nodeType
+        from extend_act_flowbus fb, extend_act_tasklog a
+        where a.instance_id = fb.instance_id
+        <if test="dealId != null and dealId != ''">
+            and a.deal_id = #{dealId}
+        </if>
+        <if test="code != null and code != ''">
+            and fb.code like concat('%', ${code}, '%')
+        </if>
+        <if test="busId != null and busId != ''">
+            and fb.bus_id = #{busId}
+        </if>
+        order by a.deal_time desc
+    </select>
+</mapper>

@@ -1,0 +1,244 @@
+shiro中对session和cookie使用
+
+在每一次用户成功登陆后，shiro都会自动的创建一个session并储存在服务端，该session会包含Subject的基本信息,
+并会在请求结束后返回session的sessionId给客户端,客户端在浏览器没有关闭的情况下可以使用sessionId进行身份验证,
+通过在之后的请求带上sessionId的cookie来检索服务器端的session，如果session存在则验证通过,并使用session的信息。
+
+rememberMe功能的实现机制
+如果开启了shiro的rememberMe功能，那么请求结束后将会再加上一个rememberMe的cookie，该cookie会储存用户的基本信息，
+一般都会对它进行加密，当浏览器关闭后，seesionId的cookie将会被清除，但remremberMe的cookie将会根据自己定义的时间
+而保留在用户的浏览器中，当用户下一次再次打来浏览器访问网址时，会自动带上这个cookie，而如果该网址不是登陆网址的话，
+shiro将会对该cookie进行解码，获得里面的用户信息，从而实现免密登陆，更新subject的信息，生成新的session并返回sessionId。
+
+
+简而言之，shiro是通过在服务端生成sesion来维持于客户端的连接，cookie则是判断该
+连接是否有效的token
+
+session管理
+sessionDao实现
+这里使用了Ehcache作为缓存，也可以使用redis或者数据库来进行持久化操作
+这里继承了AbstractSessionDAO
+
+/**
+ * Shiro的是Session操作的实现类
+ * 但update操作由于是更新用户的最新一次操作，所以调用频率高
+ * 如果shiro的过滤器过滤所有的链接，那么就算是静态资源也算会调用update
+ * 因此如果要减少update的调用，目前的解决方案是将对外服务的接口的url加上.do之类的标志结尾
+ * shiro的过滤器只过滤这些url
+ * @author MDY
+ */
+public class MyShiroDao extends AbstractSessionDAO {
+    //用于缓存session
+    private Cache<Serializable, Session> cache;
+    //用于缓存sessionId对应的用户，实现用户登陆人数限制
+    private Cache<String, Serializable> userCache;
+
+    @Override
+    protected Serializable doCreate(Session session) {
+        Serializable sessionId = generateSessionId(session);
+        assignSessionId(session, sessionId);
+        cache.put(sessionId, session);
+        return sessionId;
+    }
+
+    @Override
+    protected Session doReadSession(Serializable sessionId) {
+        if (sessionId == null) {
+            return null;
+        }
+        return cache.get(sessionId);
+    }
+
+    @Override
+    public void update(Session session) throws UnknownSessionException {
+        if (session instanceof ValidatingSession && !((ValidatingSession) session).isValid()) {
+            //如果会话过期/停止 没必要再更新了
+            return;
+        }
+        cache.put(session.getId(), session);
+    }
+
+    @Override
+    public void delete(Session session) {
+        cache.remove(session.getId());
+        userCache.put(String.valueOf(session.getAttribute(PRINCIPALS_SESSION_KEY)), null);
+    }
+
+    @Override
+    public Collection<Session> getActiveSessions() {
+        return cache.values();
+    }
+
+    public void setCache(MyShiroCache myShiroCache) {
+        userCache = myShiroCache.getUserSessionCache();
+        cache = myShiroCache.getSessionCache();
+    }
+
+}
+
+SessionManager实现
+通过在request里面设置seesionId和session，减少了sessionDao的read次数
+
+public class MyShiroSessionManager extends DefaultWebSessionManager {
+    /**
+     * 获取session
+     * 优化单次请求需要多次访问缓存的问题
+     * @throws UnknownSessionException
+     */
+    @Override
+    protected Session retrieveSession(SessionKey sessionKey){
+        Serializable sessionId = getSessionId(sessionKey);
+        ServletRequest request = null;
+        if (sessionKey instanceof WebSessionKey) {
+            request = ((WebSessionKey) sessionKey).getServletRequest();
+        }
+
+        if (request != null && null != sessionId) {
+            Object sessionObj = request.getAttribute(sessionId.toString());
+            if (sessionObj != null) {
+                return (Session) sessionObj;
+            }
+        }
+        Session session = super.retrieveSession(sessionKey);
+        if (request != null && null != sessionId) {
+            request.setAttribute(sessionId.toString(), session);
+        }
+        return session;
+    }
+}
+
+单用户登陆限制
+网上大部分教程都是直接在过滤器实现对用户的踢出，用过重写shiro的filter的isAccessAllowed方法，而博主则是在登陆的时候进行会话的判断，
+通过重写HashedCredentialsMatcher的doCredentialsMatch方法，该方法会在Subject.login(token)的时候调用，这里只实现单用户
+登陆限制
+
+Override
+    public boolean doCredentialsMatch(AuthenticationToken token, AuthenticationInfo info) {
+        String username = (String) token.getPrincipal();
+        boolean match = super.doCredentialsMatch(token, info);
+        if (match) {
+            myShiroCache.getPasswordRetryCache().remove(username);
+            //实现对之前登陆的用户踢出
+            Session session = SecurityUtils.getSubject().getSession();
+            Serializable sessionId = session.getId();
+            //从缓存中取出之前该用户对应的sessionId，有的话就删除
+            Serializable perSessionId = myShiroCache.getUserSessionCache().get(username);
+            if (perSessionId != null) {
+                myShiroCache.getSessionCache().remove(perSessionId);
+            }
+            myShiroCache.getUserSessionCache().put(username, sessionId);
+            System.err.println(sessionId.toString());
+        }
+        return match;
+    }
+
+SpringBoot使用Redis缓存Shiro的Session
+实现思路
+重写shiro的AbstractSessionDAO，并将其注入到Shiro的SessionManager中，在SpringBoot的注入过程可以参考这篇，只要将缓存缓存redis就可以了。
+接下来主要是redis的使用
+首先是SpringBoot整合Redis，首先在pom文件加入依赖
+<!-- redis整合SpringBoot用 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+
+然后在SpringBoot中配置redis的具体配置
+spring:
+  redis:
+    database: 0
+    host: xxx
+    port: 6379
+    pool:
+      max-active: 5000
+      max-idle: 5000
+      max-wait: -1
+      min-idle: 0
+    password: xxx
+    timeout: 2000
+
+
+
+
+最后在springboot的启动函数加上注解@EnableCaching就可以了。SpringBoot主要配置了RedisTemplate和StringRedisTemplate
+这两个来操作redis，当然也可以自己配置。具体配置如下
+/**
+ * 单机版的Redis的配置实现
+ */
+@Configuration
+public class RedisConfig extends CachingConfigurerSupport {
+
+    @Bean
+    //这里可以自定义cacheManager，像是自定义全局的缓存时间之类
+    public CacheManager cacheManager(RedisTemplate<?, ?> redisTemplate) {
+        return new RedisCacheManager(redisTemplate);
+    }
+
+
+    @Bean
+    //自定义的cache生成器
+    public KeyGenerator keyGenerator() {
+        return (target, method, params) -> {
+            StringBuilder sb = new StringBuilder();
+            sb.append(target.getClass().getName());
+            sb.append(method.getName());
+            for (Object obj : params) {
+                sb.append(obj.toString());
+            }
+            return sb.toString();
+        };
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "redisTemplate")
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
+        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setConnectionFactory(factory);
+        //通过配置序列化方式，防止redis的value乱码
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        //设置序列化Value的实例化对象
+//        redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        // 使用Jackson2JsonRedisSerialize 替换默认序列化
+        Jackson2JsonRedisSerializer jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer(Object.class);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+        objectMapper.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL);
+
+        jackson2JsonRedisSerializer.setObjectMapper(objectMapper);
+        redisTemplate.setValueSerializer(jackson2JsonRedisSerializer);
+        redisTemplate.setHashValueSerializer(jackson2JsonRedisSerializer);
+        redisTemplate.afterPropertiesSet();
+        return redisTemplate;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(StringRedisTemplate.class)
+    public RedisTemplate<String, String> stringRedisTemplate(RedisConnectionFactory factory) {
+        return new StringRedisTemplate(factory);
+    }
+
+}
+
+
+上面就是redis的配置，事实上你可以省略第三步，这样缓存shiro的session就没有什么问题，当时redis数据库的数据将是乱码，不方便观察。
+如果只是想实现缓存，不想看里面的数据，你完全可以只使用SpringBoot自动配置的template。
+
+下面主要说一下shiro的session缓存出错的解决方法，主要问题是session的序列化问题，如果使用上面的序列化方式，shiro的session会缺少属性，
+就算是使用阿里巴巴的fastjson也会序列化失败（至少我是失败的，可能是配置问题）。。。
+解决的方法也很简单，第三步不配置就可以了。
+如果想要redis数据库的数据不乱码，那么就直接使用StringRedisTemplate，同样不自定义序列化方式，这个时候阿里巴巴的fastjson序列化
+就不会出错。
+如果想自定义序列化方法的话，那么就只能自定义session的序列化方法了。理论上可以自定义JOSN序列化时的参数（我是没成功过。。），
+我则是直接自定义一个序列化方法将session序列化成字符串，这样虽然session的值无法辨认，但是缓存其他对象的时候可以使用springboot自带的缓存注解。。。
+
+
+因为项目中用到了shiro的权限控制，而且使用的是shiro的session，所以我就基于shiro的session管理基础上对session进行多tomcat共享，
+ * 共享的思路也很简单，就是将session保存到数据库，每个服务器在收到客户端请求的时候都从数据库中取，这样就统一了多个服务器之间的session
+ * 来源，实现了共享。只不过这里我使用的数据库是redis。
+ *
+ * 其实shiro的session只不过是基于认证的需要对tomcat的session进行了封装，所以只要实现对shiro的session进行持久化就可以了
+ * 在明白了shiro的session管理之后，我们就可以在此基础上进行session的共享了，其实只需要继承EnterpriseCacheSessionDAO
+ * （其实继承CachingSessionDAO就可以了，但是这里考虑到集群中每次都访问数据库导致开销过大，这里在本地使用ehcache进行缓存，
+ * 每次读取session的时候都先尝试读取本地ehcache缓存，没有的话再去远程redis数据库中读取），然后覆盖原来的增删改查操作，这样多个服务器就共享了session

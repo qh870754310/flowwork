@@ -1,0 +1,95 @@
+jQuery(function($){
+    var _ajax=$.ajax;   // 备份jquery的ajax方法
+    $.ajax=function(opt){
+        var _success = opt && opt.success || function(a, b){};  //获取ajax请求参数中的success方法；
+        var _opt = $.extend(opt, {
+            success:function(data, textStatus){
+                // 如果后台将请求重定向到了登录页，则data里面存放的就是登录页的源码，这里需要找到data是登录页的标记
+                //（这里是在文件中加了“weinianjie”然后注释掉。）
+                if(data.indexOf('weinianjie') != -1) {
+                    window.location.href= Globals.ctx + "/login.action";
+                    return;
+                }
+                _success(data, textStatus);    //执行每个ajax自身的success方法
+            }
+        });
+        return _ajax(_opt);  //返回新的加入了session超时处理的ajax方法。
+    };
+});
+
+jQuery(function($){
+    var _ajax=$.ajax;   // 备份jquery的ajax方法
+    $.ajax=function(opt){
+        var _success = opt && opt.success || function(a, b){};  //获取ajax请求参数中的success方法；
+        var _opt = $.extend(opt, {
+            success:function(data, textStatus){
+                // 如果后台将请求重定向到了登录页，则data里面存放的就是登录页的源码，这里需要找到data是登录页的标记
+                //（这里是在文件中加了“weinianjie”然后注释掉。）
+                if(data.indexOf('weinianjie') != -1) {
+                    window.location.href= Globals.ctx + "/login.action";
+                    return;
+                }
+                _success(data, textStatus);    //执行每个ajax自身的success方法
+            }
+        });
+        return _ajax(_opt);  //返回新的加入了session超时处理的ajax方法。
+    };
+});
+
+当Ajax请求遇到Session超时，应该怎么办？
+
+显而易见，传统的页面跳转在此已经不适用，因为Ajax请求是XMLHTTPRequest对象发起的而不是浏览器，在验证失败后的页面跳转无法反应到浏览器中，因为服务器返回（或输出）的信息被JavaScript（XMLHTTPRequest对象）接到了。
+
+那么应该怎么处理这种情况呢？
+
+方法
+
+
+既然服务器返回的消息被XMLHTTPRequest对象接收，而XMLHTTPRequest对象又是在JavaScript的掌控之中，那么我们是否可以利用JavaScript来完成页面跳转呢？
+AJAX请求头中带有X-Requested-With信息，其值为XMLHttpRequest，这正是我们可以利用的地方。
+
+/**
+ * 设置未来(全局)的AJAX请求默认选项
+ * 主要设置了AJAX请求遇到Session过期的情况
+ */
+$.ajaxSetup({
+    type: 'POST',
+    complete: function(xhr,status) {
+        var sessionStatus = xhr.getResponseHeader('sessionstatus');
+        if(sessionStatus == 'timeout') {
+            var top = getTopWinow();
+            var yes = confirm('由于您长时间没有操作, session已过期, 请重新登录.');
+            if (yes) {
+                top.location.href = '/skynk/index.html';
+            }
+        }
+    }
+});
+
+/**
+ * 在页面中任何嵌套层次的窗口中获取顶层窗口
+ * @return 当前页面的顶层窗口对象
+ */
+function getTopWinow(){
+    var p = window;
+    while(p != p.parent){
+        p = p.parent;
+    }
+    return p;
+}
+
+---------------------
+
+ //全局的ajax访问，处理ajax清求时session超时
+      $.ajaxSetup({
+         contentType:"application/x-www-form-urlencoded;charset=utf-8",
+         complete:function(XMLHttpRequest,textStatus){
+             //通过XMLHttpRequest取得响应头，sessionstatus，
+             var sessionstatus=XMLHttpRequest.getResponseHeader("session-status");
+             if(sessionstatus=="timeout"){
+                 //如果超时就处理 ，指定要跳转的页面(比如登陆页)
+                 window.location.replace("<%=realPath%>"+"/u/login");
+             }
+          }
+       });
+

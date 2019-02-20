@@ -1,0 +1,60 @@
+securityManager是Shiro配置的核心，一般情况下可以做如下配置，其中只有realm是必须配置的
+
+<!-- 安全管理器 -->
+<!-- Shiro's main business-tier object for web-enabled applications -->
+<bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+    <property name="realm" ref="shiroDbRealm" />
+    <property name="sessionManager" ref="sessionManager"/>
+    <property name="cacheManager" ref="shiroEhcacheManager" />
+</bean>
+
+1.realm
+realm中两个方法 AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken authcToken)登陆认证
+和 AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principals)权限验证 的实现位置，基本上都需要自己实现
+
+个别情况下，比如当使用Shiro-Cas的时候，doGetAuthenticationInfo方法不需要自己实现
+
+
+2.SessionManager
+SessionManager默认是 ServletContainerSessionManager
+
+当使用ServletContainerSessionManager时，验证登陆返回值AuthenticationInfo，中的Principal会被保存到HttpSession中，
+最后构造的shiro.session接口实现类中一个属性为HttpSession
+
+
+如果使用DefaultWebSessionManager时，会用到SessionDAO，默认的实现是MemorySessionDAO（在其父类DefaultSessionManager中可以看到），
+如果使用MemorySessionDAO，Principal信息会被保存到MemorySessionDAO维护的一个 ConcurrentMap<Serializable, Session> sessions 中，
+如果要自己实现中央缓存，就重写该一个AbstractSessionDAO的子类并实现相关方法。
+
+
+
+这里有个可能出现bug的地方，可以通过配置sessionIdCookie属性，解决被服务器重写cookie中会话ID，导致会话丢失的问题
+(默认是“JSESSIONID”，跟tomcat和jetty一样)
+
+<bean id="sessionManager" class="org.apache.shiro.web.session.mgt.DefaultWebSessionManager">
+    <property name="globalSessionTimeout" value="1800000"/>
+    <property name="deleteInvalidSessions" value="true"/>
+    <property name="sessionValidationSchedulerEnabled" value="true"/>
+    <property name="sessionValidationInterval" value="1800000"/>
+    <property name="sessionIdCookie" ref="sessionIdCookie"/>
+</bean>
+
+<bean id="sessionIdCookie" class="org.apache.shiro.web.servlet.SimpleCookie">
+    <constructor-arg name="name" value="SHRIOSESSIONID"/>
+</bean>
+
+
+所以memcached-session-manager做负载均衡 和 DefaultWebSessionManager 是冲突的，可以考虑自己实现一个SessionDAO来完成负载
+均衡中会话管理功能
+
+3.CacheManager
+cacheManager的作用是保存doGetAuthorizationInfo（权限验证）中的返回结果，如果没有配置cacheManager，每一次权限认证
+都需要重新调用该方法。
+
+4.Filter有很多
+灵活的登陆可以采用继承AuthenticationFilter来实现
+
+其中onAccessDenied实现调用登录态验证，或验证通过后跳转页面，返回值可以直接用false，表示不需要框架继续处理了，该方法中全部处理了。
+
+5.自定义SessionId
+需要同时启用sessionIdCookie 和 <property name="sessionIdUrlRewritingEnabled" value="false" /> ，sessionIdUrlRewritingEnabled代表不在URL后追加JessionId

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html xmlns:v-bind="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+#parse("modules/sys/header.html")
+</head>
+<body>
+<div id="rrapp" v-cloak>
+	<div v-show="showList">
+		<div class="grid-btn">
+			#if($shiro.hasPermission("shfamilymember:save"))
+            <button class="layui-btn" @click="add" type="button"><i class="layui-icon">&#xe61f;</i> 新 增</button>
+			#end
+			#if($shiro.hasPermission("shfamilymember:update"))
+            <button class="layui-btn layui-btn-normal" type="button" @click="update"><i class="layui-icon">&#xe642;</i>编辑</button>
+			#end
+			#if($shiro.hasPermission("shfamilymember:delete"))
+            <button class="layui-btn layui-btn-danger" type="button" @click="del"><i class="layui-icon">&#xe640;</i>删除</button>
+			#end
+		</div>
+	    <table id="jqGrid"></table>
+	    <div id="jqGridPager"></div>
+    </div>
+    
+    <div v-show="!showList" class="panel panel-default">
+		<div class="panel-heading">{{title}}</div>
+		<form class="form-horizontal" style="width: 1080px">
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">学生姓名</div>
+			   	<div class="col-sm-10">
+					<select type="text" class="form-control" v-model="shFamilyMember.studentId" placeholder="学生姓名">
+						<option v-for="option in studentList" v-bind:value="option.id">{{ option.name }}</option>
+					</select>
+			    </div>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">亲属关系</div>
+			   	<div class="col-sm-10">
+					<select type="text" class="form-control" v-model="shFamilyMember.domesticRelation" placeholder="亲属关系">
+						<option v-for="option in relationship" v-bind:value="option.id">{{ option.name }}</option>
+					</select>
+			    </div>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">亲属姓名</div>
+			   	<div class="col-sm-10">
+			      <input type="text" class="form-control" v-model="shFamilyMember.familyName" placeholder="亲属姓名"/>
+			    </div>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">政治面貌</div>
+			   	<div class="col-sm-10">
+					<select type="text" class="form-control" v-model="shFamilyMember.politicalStatus" placeholder="政治面貌">
+						<option v-for="option in policital_status" v-bind:value="option.id">{{ option.name }}</option>
+					</select>
+			    </div>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">出生日期</div>
+			   	<div class="col-sm-10">
+			      <input type="date" class="form-control" v-model="shFamilyMember.birthday" placeholder="出生日期"/>
+			    </div>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">证件类型</div>
+			   	<div class="col-sm-10">
+					<select type="text" class="form-control" v-model="shFamilyMember.certificateType" placeholder="证件类型">
+						<option v-for="option in certificate_type" v-bind:value="option.id">{{ option.name }}</option>
+					</select>
+			    </div>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">证件号</div>
+			   	<div class="col-sm-10">
+			      <input type="text" class="form-control" v-model="shFamilyMember.idCard" placeholder="证件号"/>
+			    </div>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">家庭成员</div>
+			   	<div class="col-sm-10">
+			      <input type="text" class="form-control" v-model="shFamilyMember.member" placeholder="家庭成员"/>
+			    </div>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">平均月收入</div>
+			   	<div class="col-sm-10">
+			      <input type="number" class="form-control" v-model="shFamilyMember.averageMonthlyEarnings" placeholder="平均月收入"/>
+			    </div>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">健康状况</div>
+			   	<div class="col-sm-10">
+					<select type="text" class="form-control" v-model="shFamilyMember.healthCondition" placeholder="健康状况">
+						<option v-for="option in health_status" v-bind:value="option.id">{{ option.name }}</option>
+					</select>
+			    </div>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">是否监护人</div>
+				<label class="radio-inline">
+					<input type="radio" name="guardian" value="false" v-model="shFamilyMember.guardian"/> 否
+				</label>
+				<label class="radio-inline">
+					<input type="radio" name="guardian" value="true" v-model="shFamilyMember.guardian"/> 是
+				</label>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">文化程度</div>
+			   	<div class="col-sm-10">
+					<select class="form-control" v-model="shFamilyMember.educationalLevel" placeholder="文化程度">
+						<option value="">请选择文化程度</option>
+						<option value="0">小学</option>
+						<option value="1">初中</option>
+						<option value="2">高中</option>
+						<option value="3">专科</option>
+						<option value="4">本科</option>
+						<option value="5">硕士研究生</option>
+						<option value="6">博士研究生</option>
+						<option value="7">博士后</option>
+					</select>
+			    </div>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">工作单位</div>
+			   	<div class="col-sm-10">
+			      <input type="text" class="form-control" v-model="shFamilyMember.company" placeholder="工作单位"/>
+			    </div>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">职业</div>
+			   	<div class="col-sm-10">
+			      <input type="text" class="form-control" v-model="shFamilyMember.profession" placeholder="职业"/>
+			    </div>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">职务</div>
+			   	<div class="col-sm-10">
+			      <input type="text" class="form-control" v-model="shFamilyMember.post" placeholder="职务"/>
+			    </div>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">联系地址</div>
+			   	<div class="col-sm-10">
+			      <input type="text" class="form-control" v-model="shFamilyMember.contactAddress" placeholder="联系地址"/>
+			    </div>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">邮政编码</div>
+			   	<div class="col-sm-10">
+			      <input type="text" class="form-control" v-model="shFamilyMember.postalCodes" placeholder="邮政编码"/>
+			    </div>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">手机</div>
+			   	<div class="col-sm-10">
+			      <input type="text" class="form-control" v-model="shFamilyMember.mobile" placeholder="手机"/>
+			    </div>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">联系电话</div>
+			   	<div class="col-sm-10">
+			      <input type="text" class="form-control" v-model="shFamilyMember.phone" placeholder="联系电话"/>
+			    </div>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">婚姻状况</div>
+			   	<div class="col-sm-10">
+					<select type="text" class="form-control" v-model="shFamilyMember.maritalStatus" placeholder="婚姻状况">
+						<option v-for="option in marital_status" v-bind:value="option.id">{{ option.name }}</option>
+					</select>
+			    </div>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">备注</div>
+			   	<div class="col-sm-10">
+			      <input type="text" class="form-control" v-model="shFamilyMember.remark" placeholder="备注"/>
+			    </div>
+			</div>
+			<div class="form-group">
+				<div class="col-sm-2 control-label"></div>
+                <button class="layui-btn" type="button" @click="saveOrUpdate" >保存</button>
+                <button class="layui-btn layui-btn-warm" type="button" @click="reload" style="margin-left: 30px">返回</button>
+			</div>
+		</form>
+	</div>
+</div>
+
+<script src="${rc.contextPath}/js/sh/shfamilymember.js?_${date.systemTime}"></script>
+</body>
+</html>

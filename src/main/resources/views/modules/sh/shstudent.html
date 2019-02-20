@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html xmlns:v-bind="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+	<!--[if IE]>
+	<script src="http://libs.baidu.com/html5shiv/3.7/html5shiv.min.js"></script>
+	<![endif]-->
+#parse("modules/sys/header.html")
+	<script src="${rc.contextPath}/plugins/jQueryDistpicker/js/distpicker.data.js"></script>
+	<script src="${rc.contextPath}/plugins/jQueryDistpicker/js/distpicker.js"></script>
+</head>
+<body>
+<div id="rrapp" v-cloak>
+	<div v-show="showList">
+		<div class="grid-btn">
+			#if($shiro.hasPermission("shstudent:save"))
+            <button class="layui-btn" @click="add" type="button"><i class="layui-icon">&#xe61f;</i> 新 增</button>
+			#end
+			#if($shiro.hasPermission("shstudent:update"))
+            <button class="layui-btn layui-btn-normal" type="button" @click="update"><i class="layui-icon">&#xe642;</i>编辑</button>
+			#end
+			#if($shiro.hasPermission("shstudent:delete"))
+            <button class="layui-btn layui-btn-danger" type="button" @click="del"><i class="layui-icon">&#xe640;</i>删除</button>
+			#end
+			#if($shiro.hasPermission("shstudent:import"))
+			<button class="layui-btn layui-btn-warm" type="button" @click="imp"><i class="layui-icon">&#xe640;</i>导出</button>
+			#end
+		</div>
+	    <table id="jqGrid"></table>
+	    <div id="jqGridPager"></div>
+    </div>
+    
+    <div v-show="!showList" class="panel panel-default">
+		<div class="panel-heading">{{title}}</div>
+		<form class="form-horizontal" style="width: 1080px;">
+			<fieldset class="layui-elem-field layui-field-title">
+				<legend>基本信息</legend>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">学号</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.studentNo" placeholder="学号"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">姓名</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.name" placeholder="姓名"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">姓名拼音</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.spellname" placeholder="姓名拼音"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">曾用名</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.usedname" placeholder="曾用名"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">性别</div>
+					<div class="col-sm-10">
+						<select type="text" class="form-control" v-model="shStudent.sex" placeholder="性别">
+							<option v-for="option in sex" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">出生日期</div>
+					<div class="col-sm-10">
+						<input type="date" class="form-control" v-model="shStudent.birthday" placeholder="出生日期"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">证件类型</div>
+					<div class="col-sm-10">
+						<select type="text" class="form-control" v-model="shStudent.certificateType" placeholder="证件类型">
+							<option v-for="option in certificate_type" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">身份证号码</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.idCard" placeholder="身份证号码"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">一卡通号</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.metroCard" placeholder="一卡通号"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">手机卡号</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.mobileno" placeholder="手机卡号"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">考生号</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.candidateNo" placeholder="考生号"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">准考证号</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.ticketNo" placeholder="准考证号"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">生源地</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.localInstitution" placeholder="生源地"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">籍贯</div>
+					<div class="col-sm-10">
+						<div id="distpicker4" class="form-inline">
+							<div class="form-group">
+								<label class="sr-only" for="province9">Province</label>
+								<select class="form-control" id="province9"></select>
+							</div>
+							<div class="form-group">
+								<label class="sr-only" for="city9">City</label>
+								<select class="form-control" id="city9"></select>
+							</div>
+							<div class="form-group">
+								<label class="sr-only" for="district9">District</label>
+								<select class="form-control" id="district9"></select>
+							</div>
+						</div>
+						<input type="hidden" style="margin-top: 10px;" id="nativePlace" class="form-control" v-model="shStudent.nativePlace" placeholder="籍贯"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">入团时间</div>
+					<div class="col-sm-10">
+						<input type="date" class="form-control" v-model="shStudent.leagueTime" placeholder="入团时间"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">入党时间</div>
+					<div class="col-sm-10">
+						<input type="date" class="form-control" v-model="shStudent.partyTime" placeholder="入党时间"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">婚姻状态</div>
+					<div class="col-sm-10">
+						<select type="text" class="form-control" v-model="shStudent.maritalStatus" placeholder="婚姻状态">
+							<option v-for="option in marital_status" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">身高（cm）</div>
+					<div class="col-sm-10">
+						<input type="number" class="form-control" v-model="shStudent.height" placeholder="身高（cm）"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">体重（kg）</div>
+					<div class="col-sm-10">
+						<input type="number" class="form-control" v-model="shStudent.weight" placeholder="体重（kg）"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">民族</div>
+					<div class="col-sm-10">
+						<select type="text" class="form-control" v-model="shStudent.nation" placeholder="民族">
+							<option v-for="option in nation" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">政治面貌</div>
+					<div class="col-sm-10">
+						<select type="text" class="form-control" v-model="shStudent.politicalStatus" placeholder="政治面貌">
+							<option v-for="option in policital_status" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">来源国别</div>
+					<div class="col-sm-10">
+						<select type="text" class="form-control" v-model="shStudent.sourceCountry" placeholder="来源国别">
+							<option v-for="option in source_country" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">户口所在省</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.registeredProvince" placeholder="户口所在省"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">户口所在市</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.registeredCity" placeholder="户口所在市"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">户口所在县</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.registeredCounty" placeholder="户口所在县"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">户口所在地</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.domicilePlace" placeholder="户口所在地"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">家庭所属街道（镇</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.familyStreet" placeholder="家庭所属街道（镇"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">警署</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.townPoliceStation" placeholder="警署"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">本人住址所在省</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.addressProvince" placeholder="本人住址所在省"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">本人住址所在市</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.addressCity" placeholder="本人住址所在市"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">本人住址所在县</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.addressCounty" placeholder="本人住址所在县"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">本人住址</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.address" placeholder="本人住址"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">家庭特殊情况</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.specialFamilyCircumstances" placeholder="家庭特殊情况"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">是否知青子女</div>
+					<label class="radio-inline">
+						<input type="radio" name="educatedChildren" value="false" v-model="shStudent.educatedChildren"/> 否
+					</label>
+					<label class="radio-inline">
+						<input type="radio" name="educatedChildren" value="true" v-model="shStudent.educatedChildren"/> 是
+					</label>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">健康状况</div>
+					<div class="col-sm-10">
+						<select type="text" class="form-control" v-model="shStudent.healthCondition" placeholder="健康状况">
+							<option v-for="option in health_status" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">血型</div>
+					<div class="col-sm-10">
+						<select type="text" class="form-control" v-model="shStudent.bloodType" placeholder="血型">
+							<option v-for="option in blood_type" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">邮递编号</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.postalCodes" placeholder="邮递编号"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">港澳台侨</div>
+					<div class="col-sm-10">
+						<select type="text" class="form-control" v-model="shStudent.emigrantcode" placeholder="港澳台侨">
+							<option v-for="option in gatq" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">户口性质</div>
+					<div class="col-sm-10">
+						<select type="text" class="form-control" v-model="shStudent.householdRegistrationType" placeholder="户口性质">
+							<option v-for="option in household" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+			</fieldset>
+			<fieldset class="layui-elem-field layui-field-title">
+				<legend>特长</legend>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">特长</div>
+					<div class="col-sm-10">
+						<textarea rows="3"  class="form-control" v-model="shStudent.speciality" placeholder="特长">
+
+						</textarea>
+					</div>
+				</div>
+			</fieldset>
+			<fieldset class="layui-elem-field layui-field-title">
+				<legend>曾担任职务及获奖信息</legend>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">获奖情况</div>
+					<div class="col-sm-10">
+						<textarea rows="3" class="form-control" v-model="shStudent.award" placeholder="获奖情况">
+
+						</textarea>
+					</div>
+				</div>
+			</fieldset>
+
+			<fieldset class="layui-elem-field layui-field-title">
+				<legend>联系方式</legend>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">通讯地址</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.postaladdress" placeholder="通讯地址"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">电子邮箱</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.email" placeholder="电子邮箱"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">通讯编码</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.postalcode" placeholder="通讯编码"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">其它联系方式</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.otherWay" placeholder="其它联系方式"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">MSN号</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.msn" placeholder="MSN号"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">个人主页</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.homepage" placeholder="个人主页"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">QQ号</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.qq" placeholder="QQ号"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">家庭地址</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.homeAddress" placeholder="家庭地址"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">家庭邮编</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.homePostal" placeholder="家庭邮编"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">家庭电话</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.homePhone" placeholder="家庭电话"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">家庭Email</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.familyEmail" placeholder="家庭Email"/>
+					</div>
+				</div>
+			</fieldset>
+
+			<fieldset class="layui-elem-field layui-field-title">
+				<legend>报到情况</legend>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">到达地点</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.arrival" placeholder="到达地点"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">预计到达时间</div>
+					<div class="col-sm-10">
+						<input type="datetime-local" id="arrival_time" class="form-control" v-model="shStudent.arrivalTime" placeholder="预计到达时间"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">到达班次</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.arrivalFlight" placeholder="到达班次"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">是否自备车</div>
+					<label class="radio-inline">
+						<input type="radio" name="selfMadeCar" value="false" v-model="shStudent.selfMadeCar"/> 否
+					</label>
+					<label class="radio-inline">
+						<input type="radio" name="selfMadeCar" value="true" v-model="shStudent.selfMadeCar"/> 是
+					</label>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">随行人数</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.entourage" placeholder="随行人数"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">是否走读</div>
+					<label class="radio-inline">
+						<input type="radio" name="nonResident" value="false" v-model="shStudent.nonResident"/> 否
+					</label>
+					<label class="radio-inline">
+						<input type="radio" name="nonResident" value="true" v-model="shStudent.nonResident"/> 是
+					</label>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">是否预定生活用品</div>
+					<label class="radio-inline">
+						<input type="radio" name="status" value="false" v-model="shStudent.bookLiving"/> 否
+					</label>
+					<label class="radio-inline">
+						<input type="radio" name="status" value="true" v-model="shStudent.bookLiving"/> 是
+					</label>
+				</div>
+			</fieldset>
+			<fieldset class="layui-elem-field layui-field-title">
+				<legend>专业信息</legend>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">学籍号</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.studentStatus" placeholder="学籍号"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">学生类别</div>
+					<div class="col-sm-10">
+						<select class="form-control" v-model="shStudent.studentCategory" placeholder="学生类别">
+							<option v-for="option in student_type" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">学生身份</div>
+					<div class="col-sm-10">
+						<select class="form-control" v-model="shStudent.studentIdentity" placeholder="学生身份">
+							<option v-for="option in student_identity" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">院系</div>
+					<div class="col-sm-10">
+						<select class="form-control" v-model="shStudent.department" placeholder="院系">
+							<option v-for="option in department" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">年级</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.grade" placeholder="年级"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">专业</div>
+					<div class="col-sm-10">
+						<select class="form-control" v-model="shStudent.profession" placeholder="专业">
+							<option v-for="option in profession" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">班级</div>
+					<div class="col-sm-10">
+						<select class="form-control" v-model="shStudent.stuClass" placeholder="班级">
+							<option v-for="option in clazz" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">开户银行1</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.bankAccountF" placeholder="开户银行1"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">银行卡号1</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.bankCard" placeholder="银行卡号1"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">开户银行2</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.bankAccountS" placeholder="开户银行2"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">银行卡号2</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.bankAccount" placeholder="银行卡号2"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">报考省市</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.bkss" placeholder="报考省市"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">入学前单位</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.rxqdw" placeholder="入学前单位"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">入学日期</div>
+					<div class="col-sm-10">
+						<input type="date" class="form-control" v-model="shStudent.rxrq" placeholder="入学日期"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">入学年级</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.rxnj" placeholder="入学年级"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">入学院系</div>
+					<div class="col-sm-10">
+						<select class="form-control" v-model="shStudent.rxyx" placeholder="入学院系">
+							<option v-for="option in department" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">入学专业</div>
+					<div class="col-sm-10">
+						<select class="form-control" v-model="shStudent.rxzy" placeholder="入学专业">
+							<option v-for="option in profession" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">入学方式</div>
+					<div class="col-sm-10">
+						<select class="form-control" v-model="shStudent.rxfs" placeholder="入学方式">
+							<option v-for="option in enrolment" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">培养方式</div>
+					<div class="col-sm-10">
+						<select class="form-control" v-model="shStudent.pyfs" placeholder="培养方式">
+							<option v-for="option in cultivation_mode" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">学生来源</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.xsly" placeholder="学生来源"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">校区</div>
+					<div class="col-sm-10">
+						<select class="form-control" v-model="shStudent.xq" placeholder="校区">
+							<option v-for="option in campus" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">就读学位</div>
+					<div class="col-sm-10">
+						<select class="form-control" v-model="shStudent.jdxw" placeholder="就读学位">
+							<option v-for="option in degree" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">就读学历</div>
+					<div class="col-sm-10">
+						<select class="form-control" v-model="shStudent.jdxl" placeholder="就读学历">
+							<option v-for="option in academic" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">学制</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.xz" placeholder="学制"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">预计毕业年份</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.yjbynf" placeholder="预计毕业年份"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">实际毕业时间</div>
+					<div class="col-sm-10">
+						<input type="date" class="form-control" v-model="shStudent.sjbysj" placeholder="实际毕业时间"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">手机号2</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.mobile" placeholder="手机号2"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">注册学年</div>
+					<div class="col-sm-10">
+						<select class="form-control" v-model="shStudent.zcxn" placeholder="注册学年">
+							<option v-for="option in registered_school_year" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">注册学期</div>
+					<div class="col-sm-10">
+						<select class="form-control" v-model="shStudent.zcxq" placeholder="注册学期">
+							<option v-for="option in semester" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">在校</div>
+					<label class="radio-inline">
+						<input type="radio" name="zx" value="false" v-model="shStudent.zx"/> 否
+					</label>
+					<label class="radio-inline">
+						<input type="radio" name="zx" value="true" v-model="shStudent.zx"/> 是
+					</label>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">再籍</div>
+					<label class="radio-inline">
+						<input type="radio" name="zj" value="false" v-model="shStudent.zj"/> 否
+					</label>
+					<label class="radio-inline">
+						<input type="radio" name="zj" value="true" v-model="shStudent.zj"/> 是
+					</label>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">高考成绩</div>
+					<div class="col-sm-10">
+						<input type="number" class="form-control" v-model="shStudent.gkcj" placeholder="高考成绩"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">军训信息</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.jxxx" placeholder="军训信息"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">毕业类型</div>
+					<div class="col-sm-10">
+						<select class="form-control" v-model="shStudent.bylx" placeholder="毕业类型">
+							<option v-for="option in graduation_type" v-bind:value="option.id">{{ option.name }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">毕业证书编号</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.byzsbh" placeholder="毕业证书编号"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">考区</div>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" v-model="shStudent.kq" placeholder="考区"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label">备注</div>
+					<div class="col-sm-10">
+						<textarea rows="3" class="form-control" v-model="shStudent.remark" placeholder="备注"></textarea>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-2 control-label"></div>
+					<button class="layui-btn" type="button" @click="saveOrUpdate" >保存</button>
+					<button class="layui-btn layui-btn-warm" type="button" @click="reload" style="margin-left: 30px">返回</button>
+				</div>
+			</fieldset>
+		</form>
+	</div>
+</div>
+
+<script src="${rc.contextPath}/js/sh/shstudent.js?_${date.systemTime}"></script>
+<script>
+    $("#distpicker4").distpicker({
+  //      placeholder: false,
+        autoSelect: false
+    });
+
+    $('#province9, #city9, #district9').change(function () {
+        $('#nativePlace').val($('#province9').val() + $('#city9').val() + $('#district9').val());
+    });
+</script>
+</body>
+</html>

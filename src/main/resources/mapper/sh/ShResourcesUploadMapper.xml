@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.qh.modules.sh.dao.ShResourcesUploadDao">
+
+
+    <resultMap type="com.qh.modules.sh.entity.ShResourcesUploadEntity" id="shResourcesUploadMap">
+        <result property="id" column="id"/>
+        <result property="type" column="type"/>
+        <result property="remark" column="remark"/>
+        <result property="path" column="path"/>
+        <result property="name" column="name"/>
+        <result property="createDate" column="createDate"/>
+        <result property="status" column="status"/>
+        <result property="order" column="order"/>
+    </resultMap>
+
+    <sql id="Base_Column_List" >
+		id, 
+		type, 
+		remark, 
+		path, 
+		name,
+		createDate,
+		status,
+		`order`
+    </sql>
+
+	<select id="queryObject" resultType="com.qh.modules.sh.entity.ShResourcesUploadEntity" resultMap="shResourcesUploadMap">
+		select
+		<include refid="Base_Column_List" />
+		from sh_resources_upload
+		where id = #{value}
+	</select>
+
+	<select id="queryList" resultType="com.qh.modules.sh.entity.ShResourcesUploadEntity" resultMap="shResourcesUploadMap">
+		select
+		<include refid="Base_Column_List" />
+		from sh_resources_upload
+		<where>
+			<if test="type != null and type.trim() != ''">
+				type =  #{type}
+			</if>
+		</where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+			<otherwise>
+                order by id desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+
+    <select id="queryListByBean" resultType="com.qh.modules.sh.entity.ShResourcesUploadEntity" resultMap="shResourcesUploadMap">
+        select
+        <include refid="Base_Column_List" />
+        from sh_resources_upload
+        WHERE 1=1
+    </select>
+	
+ 	<select id="queryTotal" resultType="int">
+		select count(*) from sh_resources_upload
+	</select>
+
+    <select id="getImagesByType" resultType="com.qh.modules.sh.entity.ShResourcesUploadEntity">
+		select * from sh_resources_upload where `status` = 1 and  type = #{type} order by createDate asc
+	</select>
+
+    <insert id="save" parameterType="com.qh.modules.sh.entity.ShResourcesUploadEntity">
+		insert into sh_resources_upload
+		(
+			`id`, 
+			`type`, 
+			`remark`, 
+			`path`, 
+			`name`,
+			`createDate`,
+			`status`,
+			`order`
+		)
+		values
+		(
+			#{id}, 
+			#{type}, 
+			#{remark}, 
+			#{path}, 
+			#{name},
+			#{createDate},
+			#{status},
+			#{order}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="com.qh.modules.sh.entity.ShResourcesUploadEntity">
+		update sh_resources_upload 
+		<set>
+			<if test="type != null">`type` = #{type}, </if>
+			<if test="remark != null">`remark` = #{remark}, </if>
+			<if test="path != null">`path` = #{path}, </if>
+			<if test="name != null">`name` = #{name},</if>
+			<if test="status != null">`status` = #{status},</if>
+			<if test="order != null">`order` = #{order}</if>
+		</set>
+		where id = #{id}
+	</update>
+	
+	<delete id="delete">
+		delete from sh_resources_upload where id = #{value}
+	</delete>
+	
+	<delete id="deleteBatch">
+		delete from sh_resources_upload where id in 
+		<foreach item="id" collection="array" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+
+</mapper>

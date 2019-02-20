@@ -1,0 +1,28 @@
+package com.qh.modules.activiti.annotation;
+
+import java.lang.annotation.*;
+
+/**
+ * 类的功能描述.
+ * 在实体类中对字段进行注解，业务表名
+ *
+ * Created by Administrator on 2018/5/2.
+ */
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface ActTable {
+
+    /**
+     * 业务表名
+     * @return
+     */
+    String tableName();
+
+    /**
+     * 数据库主键
+     * @return
+     */
+    String pkName();
+
+}

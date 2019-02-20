@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.qh.modules.sh.dao.ShFamilyMemberDao">
+
+
+    <resultMap type="com.qh.modules.sh.entity.ShFamilyMemberEntity" id="shFamilyMemberMap">
+        <result property="id" column="id"/>
+        <result property="studentId" column="student_id"/>
+        <result property="domesticRelation" column="domestic_relation"/>
+        <result property="familyName" column="family_name"/>
+        <result property="politicalStatus" column="political_status"/>
+        <result property="birthday" column="birthday"/>
+        <result property="certificateType" column="certificate_type"/>
+        <result property="idCard" column="id_card"/>
+        <result property="member" column="member"/>
+        <result property="averageMonthlyEarnings" column="average_monthly_earnings"/>
+        <result property="healthCondition" column="health_condition"/>
+        <result property="guardian" column="guardian"/>
+        <result property="educationalLevel" column="educational_level"/>
+        <result property="company" column="company"/>
+        <result property="profession" column="profession"/>
+        <result property="post" column="post"/>
+        <result property="contactAddress" column="contact_address"/>
+        <result property="postalCodes" column="postal_codes"/>
+        <result property="mobile" column="mobile"/>
+        <result property="phone" column="phone"/>
+        <result property="maritalStatus" column="marital_status"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="Base_Column_List" >
+		id, 
+		student_id, 
+		domestic_relation, 
+		family_name, 
+		political_status, 
+		birthday, 
+		certificate_type, 
+		id_card, 
+		member, 
+		average_monthly_earnings, 
+		health_condition, 
+		guardian, 
+		educational_level, 
+		company, 
+		profession, 
+		post, 
+		contact_address, 
+		postal_codes, 
+		mobile, 
+		phone, 
+		marital_status, 
+		remark
+    </sql>
+
+	<select id="queryObject" resultType="com.qh.modules.sh.entity.ShFamilyMemberEntity" resultMap="shFamilyMemberMap">
+		select
+		<include refid="Base_Column_List" />
+		from sh_family_member
+		where id = #{value}
+	</select>
+
+	<select id="queryList" resultType="com.qh.modules.sh.entity.ShFamilyMemberEntity" resultMap="shFamilyMemberMap">
+		select
+		<include refid="Base_Column_List" />
+		from sh_family_member
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+			<otherwise>
+                order by id desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+
+    <select id="queryListByBean" resultType="com.qh.modules.sh.entity.ShFamilyMemberEntity" resultMap="shFamilyMemberMap">
+        select
+        <include refid="Base_Column_List" />
+        from sh_family_member
+        WHERE 1=1
+    </select>
+	
+ 	<select id="queryTotal" resultType="int">
+		select count(*) from sh_family_member
+	</select>
+    <select id="getFamilyMemberByIdCard" resultType="com.qh.modules.sh.entity.ShFamilyMemberEntity" resultMap="shFamilyMemberMap">
+		select a.* FROM sh_family_member as a LEFT JOIN sh_student as b on a.student_id = b.id
+		where b.id_card = #{idCard}
+	</select>
+
+    <insert id="save" parameterType="com.qh.modules.sh.entity.ShFamilyMemberEntity">
+		insert into sh_family_member
+		(
+			`id`, 
+			`student_id`, 
+			`domestic_relation`, 
+			`family_name`, 
+			`political_status`, 
+			`birthday`, 
+			`certificate_type`, 
+			`id_card`, 
+			`member`, 
+			`average_monthly_earnings`, 
+			`health_condition`, 
+			`guardian`, 
+			`educational_level`, 
+			`company`, 
+			`profession`, 
+			`post`, 
+			`contact_address`, 
+			`postal_codes`, 
+			`mobile`, 
+			`phone`, 
+			`marital_status`, 
+			`remark`
+		)
+		values
+		(
+			#{id}, 
+			#{studentId}, 
+			#{domesticRelation}, 
+			#{familyName}, 
+			#{politicalStatus}, 
+			#{birthday}, 
+			#{certificateType}, 
+			#{idCard}, 
+			#{member}, 
+			#{averageMonthlyEarnings}, 
+			#{healthCondition}, 
+			#{guardian}, 
+			#{educationalLevel}, 
+			#{company}, 
+			#{profession}, 
+			#{post}, 
+			#{contactAddress}, 
+			#{postalCodes}, 
+			#{mobile}, 
+			#{phone}, 
+			#{maritalStatus}, 
+			#{remark}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="com.qh.modules.sh.entity.ShFamilyMemberEntity">
+		update sh_family_member 
+		<set>
+			<if test="studentId != null">`student_id` = #{studentId}, </if>
+			<if test="domesticRelation != null">`domestic_relation` = #{domesticRelation}, </if>
+			<if test="familyName != null">`family_name` = #{familyName}, </if>
+			<if test="politicalStatus != null">`political_status` = #{politicalStatus}, </if>
+			<if test="birthday != null">`birthday` = #{birthday}, </if>
+			<if test="certificateType != null">`certificate_type` = #{certificateType}, </if>
+			<if test="idCard != null">`id_card` = #{idCard}, </if>
+			<if test="member != null">`member` = #{member}, </if>
+			<if test="averageMonthlyEarnings != null">`average_monthly_earnings` = #{averageMonthlyEarnings}, </if>
+			<if test="healthCondition != null">`health_condition` = #{healthCondition}, </if>
+			<if test="guardian != null">`guardian` = #{guardian}, </if>
+			<if test="educationalLevel != null">`educational_level` = #{educationalLevel}, </if>
+			<if test="company != null">`company` = #{company}, </if>
+			<if test="profession != null">`profession` = #{profession}, </if>
+			<if test="post != null">`post` = #{post}, </if>
+			<if test="contactAddress != null">`contact_address` = #{contactAddress}, </if>
+			<if test="postalCodes != null">`postal_codes` = #{postalCodes}, </if>
+			<if test="mobile != null">`mobile` = #{mobile}, </if>
+			<if test="phone != null">`phone` = #{phone}, </if>
+			<if test="maritalStatus != null">`marital_status` = #{maritalStatus}, </if>
+			<if test="remark != null">`remark` = #{remark}</if>
+		</set>
+		where id = #{id}
+	</update>
+	
+	<delete id="delete">
+		delete from sh_family_member where id = #{value}
+	</delete>
+	
+	<delete id="deleteBatch">
+		delete from sh_family_member where id in 
+		<foreach item="id" collection="array" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+
+</mapper>

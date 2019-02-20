@@ -1,0 +1,585 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.qh.modules.sh.dao.ShStudentDao">
+
+
+    <resultMap type="com.qh.modules.sh.entity.ShStudentEntity" id="shStudentMap">
+        <result property="id" column="id"/>
+        <result property="studentNo" column="student_no"/>
+        <result property="name" column="name"/>
+        <result property="spellname" column="spellname"/>
+        <result property="usedname" column="usedname"/>
+        <result property="sex" column="sex"/>
+        <result property="birthday" column="birthday"/>
+        <result property="certificateType" column="certificate_type"/>
+        <result property="idCard" column="id_card"/>
+        <result property="metroCard" column="metro_card"/>
+        <result property="mobileno" column="mobileNo"/>
+        <result property="candidateNo" column="candidate_no"/>
+        <result property="ticketNo" column="ticket_no"/>
+        <result property="localInstitution" column="local_institution"/>
+        <result property="nativePlace" column="native_place"/>
+        <result property="leagueTime" column="league_time"/>
+        <result property="partyTime" column="party_time"/>
+        <result property="maritalStatus" column="marital_status"/>
+        <result property="height" column="height"/>
+        <result property="weight" column="weight"/>
+        <result property="nation" column="nation"/>
+        <result property="politicalStatus" column="political_status"/>
+        <result property="sourceCountry" column="source_country"/>
+        <result property="registeredProvince" column="registered_province"/>
+        <result property="registeredCity" column="registered_city"/>
+        <result property="registeredCounty" column="registered_county"/>
+        <result property="domicilePlace" column="domicile_place"/>
+        <result property="familyStreet" column="family_street"/>
+        <result property="townPoliceStation" column="town_police_station"/>
+        <result property="addressProvince" column="address_province"/>
+        <result property="addressCity" column="address_city"/>
+        <result property="addressCounty" column="address_county"/>
+        <result property="address" column="address"/>
+        <result property="specialFamilyCircumstances" column="special_family_circumstances"/>
+        <result property="educatedChildren" column="educated_children"/>
+        <result property="healthCondition" column="health_condition"/>
+        <result property="bloodType" column="blood_type"/>
+        <result property="bankCard" column="bank_card"/>
+        <result property="postalCodes" column="postal_codes"/>
+        <result property="emigrantcode" column="emigrantCode"/>
+        <result property="householdRegistrationType" column="household_registration_type"/>
+        <result property="speciality" column="speciality"/>
+        <result property="award" column="award"/>
+		<result property="postaladdress" column="postalAddress"/>
+		<result property="email" column="email"/>
+		<result property="postalcode" column="postalCode"/>
+		<result property="otherWay" column="other_way"/>
+		<result property="msn" column="msn"/>
+		<result property="homepage" column="homePage"/>
+		<result property="qq" column="qq"/>
+		<result property="homeAddress" column="home_address"/>
+		<result property="homePostal" column="home_postal"/>
+		<result property="homePhone" column="home_phone"/>
+		<result property="familyEmail" column="family_email"/>
+		<result property="arrival" column="arrival"/>
+		<result property="arrivalTime" column="arrival_time"/>
+		<result property="arrivalFlight" column="arrival_flight"/>
+		<result property="selfMadeCar" column="self_made_car"/>
+		<result property="entourage" column="entourage"/>
+		<result property="nonResident" column="non_resident"/>
+		<result property="bookLiving" column="book_living"/>
+		<result property="studentStatus" column="student_status"/>
+		<result property="studentCategory" column="student_category"/>
+		<result property="studentIdentity" column="student_identity"/>
+		<result property="department" column="department"/>
+		<result property="grade" column="grade"/>
+		<result property="profession" column="profession"/>
+		<result property="stuClass" column="stu_class"/>
+		<result property="bankAccountF" column="bank_account_f"/>
+		<result property="bankAccountS" column="bank_account_s"/>
+		<result property="bankAccount" column="bank_account"/>
+		<result property="bkss" column="bkss"/>
+		<result property="rxqdw" column="rxqdw"/>
+		<result property="rxrq" column="rxrq"/>
+		<result property="rxnj" column="rxnj"/>
+		<result property="rxyx" column="rxyx"/>
+		<result property="rxzy" column="rxzy"/>
+		<result property="rxfs" column="rxfs"/>
+		<result property="pyfs" column="pyfs"/>
+		<result property="xsly" column="xsly"/>
+		<result property="xq" column="xq"/>
+		<result property="jdxw" column="jdxw"/>
+		<result property="jdxl" column="jdxl"/>
+		<result property="xz" column="xz"/>
+		<result property="yjbynf" column="yjbynf"/>
+		<result property="sjbysj" column="sjbysj"/>
+		<result property="mobile" column="mobile"/>
+		<result property="zcxn" column="zcxn"/>
+		<result property="zcxq" column="zcxq"/>
+		<result property="zx" column="zx"/>
+		<result property="zj" column="zj"/>
+		<result property="gkcj" column="gkcj"/>
+		<result property="remark" column="remark"/>
+		<result property="jxxx" column="jxxx"/>
+		<result property="bylx" column="bylx"/>
+		<result property="byzsbh" column="byzsbh"/>
+		<result property="kq" column="kq"/>
+    </resultMap>
+
+    <sql id="Base_Column_List" >
+		id, 
+		student_no, 
+		name, 
+		spellname, 
+		usedname, 
+		sex, 
+		birthday, 
+		certificate_type, 
+		id_card, 
+		metro_card, 
+		mobileNo, 
+		candidate_no, 
+		ticket_no, 
+		local_institution, 
+		native_place, 
+		league_time, 
+		party_time, 
+		marital_status, 
+		height, 
+		weight, 
+		nation, 
+		political_status, 
+		source_country, 
+		registered_province, 
+		registered_city, 
+		registered_county, 
+		domicile_place, 
+		family_street, 
+		town_police_station, 
+		address_province, 
+		address_city, 
+		address_county, 
+		address, 
+		special_family_circumstances, 
+		educated_children, 
+		health_condition, 
+		blood_type, 
+		bank_card, 
+		postal_codes, 
+		emigrantCode, 
+		household_registration_type, 
+		speciality, 
+		award,
+		postalAddress,
+		email,
+		postalCode,
+		other_way,
+		msn,
+		homePage,
+		qq,
+		home_address,
+		home_postal,
+		home_phone,
+		family_email,
+		arrival,
+		arrival_time,
+		arrival_flight,
+		self_made_car,
+		entourage,
+		non_resident,
+		book_living,
+		student_status,
+		student_category,
+		student_identity,
+		department,
+		grade,
+		profession,
+		stu_class,
+		bank_account_f,
+		bank_account_s,
+		bank_account,
+		bkss,
+		rxqdw,
+		rxrq,
+		rxnj,
+		rxyx,
+		rxzy,
+		rxfs,
+		pyfs,
+		xsly,
+		xq,
+		jdxw,
+		jdxl,
+		xz,
+		yjbynf,
+		sjbysj,
+		mobile,
+		zcxn,
+		zcxq,
+		zx,
+		zj,
+		gkcj,
+		remark,
+		jxxx,
+		bylx,
+		byzsbh,
+		kq
+    </sql>
+
+	<select id="queryObject" resultType="com.qh.modules.sh.entity.ShStudentEntity" resultMap="shStudentMap">
+		select
+		<include refid="Base_Column_List" />
+		from sh_student
+		where id = #{id}
+	</select>
+
+	<select id="queryList" resultType="com.qh.modules.sh.entity.ShStudentEntity" resultMap="shStudentMap">
+		select
+		<include refid="Base_Column_List" />
+		from sh_student
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+			<otherwise>
+                order by id desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+
+    <select id="queryListByBean" resultType="com.qh.modules.sh.entity.ShStudentEntity" resultMap="shStudentMap">
+        select
+        <include refid="Base_Column_List" />
+        from sh_student
+        WHERE 1=1
+    </select>
+	
+ 	<select id="queryTotal" resultType="int">
+		select count(*) from sh_student
+	</select>
+	<select id="queryObjectByCardNo" resultType="com.qh.modules.sh.entity.ShStudentEntity" resultMap="shStudentMap">
+		select
+		<include refid="Base_Column_List" />
+		from sh_student
+		where id_card = #{idCard}
+	</select>
+	<select id="queryObjectByOpenId" resultType="java.util.Map">
+		select bindId, userId, openId, name, id_card
+		from wechat_userbind
+		left join sh_student on userId = id
+		where openId = #{openId}
+	</select>
+	<select id="getStudentInfoByCard" resultType="com.qh.modules.sh.entity.ShStudentEntity" resultMap="shStudentMap">
+		select
+		<include refid="Base_Column_List" />
+		from sh_student
+		where id_card = #{idCard}
+	</select>
+	<select id="getStudentData" resultType="com.qh.modules.sh.entity.ShStudentEntity" resultMap="shStudentMap">
+		select
+		<include refid="Base_Column_List" />
+		from sh_student
+	</select>
+
+	<insert id="save" parameterType="com.qh.modules.sh.entity.ShStudentEntity">
+		insert into sh_student
+		(
+			`id`, 
+			`student_no`, 
+			`name`, 
+			`spellname`, 
+			`usedname`, 
+			`sex`, 
+			`birthday`, 
+			`certificate_type`, 
+			`id_card`, 
+			`metro_card`, 
+			`mobileNo`, 
+			`candidate_no`, 
+			`ticket_no`, 
+			`local_institution`, 
+			`native_place`, 
+			`league_time`, 
+			`party_time`, 
+			`marital_status`, 
+			`height`, 
+			`weight`, 
+			`nation`, 
+			`political_status`, 
+			`source_country`, 
+			`registered_province`, 
+			`registered_city`, 
+			`registered_county`, 
+			`domicile_place`, 
+			`family_street`, 
+			`town_police_station`, 
+			`address_province`, 
+			`address_city`, 
+			`address_county`, 
+			`address`, 
+			`special_family_circumstances`, 
+			`educated_children`, 
+			`health_condition`, 
+			`blood_type`, 
+			`bank_card`, 
+			`postal_codes`, 
+			`emigrantCode`, 
+			`household_registration_type`, 
+			`speciality`, 
+			`award`,
+			`postalAddress`,
+			`email`,
+			`postalCode`,
+			`other_way`,
+			`msn`,
+			`homePage`,
+			`qq`,
+			`home_address`,
+			`home_postal`,
+			`home_phone`,
+			`family_email`,
+			`arrival`,
+			`arrival_time`,
+			`arrival_flight`,
+			`self_made_car`,
+			`entourage`,
+			`non_resident`,
+			`book_living`,
+			`student_status`,
+			`student_category`,
+			`student_identity`,
+			`department`,
+			`grade`,
+			`profession`,
+			`stu_class`,
+			`bank_account_f`,
+			`bank_account_s`,
+			`bank_account`,
+			`bkss`,
+			`rxqdw`,
+			`rxrq`,
+			`rxnj`,
+			`rxyx`,
+			`rxzy`,
+			`rxfs`,
+			`pyfs`,
+			`xsly`,
+			`xq`,
+			`jdxw`,
+			`jdxl`,
+			`xz`,
+			`yjbynf`,
+			`sjbysj`,
+			`mobile`,
+			`zcxn`,
+			`zcxq`,
+			`zx`,
+			`zj`,
+			`gkcj`,
+			`remark`,
+			`jxxx`,
+			`bylx`,
+			`byzsbh`,
+			`kq`
+		)
+		values
+		(
+			#{id}, 
+			#{studentNo}, 
+			#{name}, 
+			#{spellname}, 
+			#{usedname}, 
+			#{sex}, 
+			#{birthday}, 
+			#{certificateType}, 
+			#{idCard}, 
+			#{metroCard}, 
+			#{mobileno}, 
+			#{candidateNo}, 
+			#{ticketNo}, 
+			#{localInstitution}, 
+			#{nativePlace}, 
+			#{leagueTime}, 
+			#{partyTime}, 
+			#{maritalStatus}, 
+			#{height}, 
+			#{weight}, 
+			#{nation}, 
+			#{politicalStatus}, 
+			#{sourceCountry}, 
+			#{registeredProvince}, 
+			#{registeredCity}, 
+			#{registeredCounty}, 
+			#{domicilePlace}, 
+			#{familyStreet}, 
+			#{townPoliceStation}, 
+			#{addressProvince}, 
+			#{addressCity}, 
+			#{addressCounty}, 
+			#{address}, 
+			#{specialFamilyCircumstances}, 
+			#{educatedChildren}, 
+			#{healthCondition}, 
+			#{bloodType}, 
+			#{bankCard}, 
+			#{postalCodes}, 
+			#{emigrantcode}, 
+			#{householdRegistrationType}, 
+			#{speciality}, 
+			#{award},
+			#{postaladdress},
+			#{email},
+			#{postalcode},
+			#{otherWay},
+			#{msn},
+			#{homepage},
+			#{qq},
+			#{homeAddress},
+			#{homePostal},
+			#{homePhone},
+			#{familyEmail},
+			#{arrival},
+			#{arrivalTime},
+			#{arrivalFlight},
+			#{selfMadeCar},
+			#{entourage},
+			#{nonResident},
+			#{bookLiving},
+			#{studentStatus},
+			#{studentCategory},
+			#{studentIdentity},
+			#{department},
+			#{grade},
+			#{profession},
+			#{stuClass},
+			#{bankAccountF},
+			#{bankAccountS},
+			#{bankAccount},
+			#{bkss},
+			#{rxqdw},
+			#{rxrq},
+			#{rxnj},
+			#{rxyx},
+			#{rxzy},
+			#{rxfs},
+			#{pyfs},
+			#{xsly},
+			#{xq},
+			#{jdxw},
+			#{jdxl},
+			#{xz},
+			#{yjbynf},
+			#{sjbysj},
+			#{mobile},
+			#{zcxn},
+			#{zcxq},
+			#{zx},
+			#{zj},
+			#{gkcj},
+			#{remark},
+			#{jxxx},
+			#{bylx},
+			#{byzsbh},
+			#{kq}
+		)
+	</insert>
+	<insert id="addBind" parameterType="map">
+		insert into wechat_userbind (bindId, userId, openId) values (#{uuid}, #{userId}, #{openId});
+	</insert>
+
+	<update id="update" parameterType="com.qh.modules.sh.entity.ShStudentEntity">
+		update sh_student 
+		<set>
+			<if test="studentNo != null">`student_no` = #{studentNo}, </if>
+			<if test="name != null">`name` = #{name}, </if>
+			<if test="spellname != null">`spellname` = #{spellname}, </if>
+			<if test="usedname != null">`usedname` = #{usedname}, </if>
+			<if test="sex != null">`sex` = #{sex}, </if>
+			<if test="birthday != null">`birthday` = #{birthday}, </if>
+			<if test="certificateType != null">`certificate_type` = #{certificateType}, </if>
+			<if test="idCard != null">`id_card` = #{idCard}, </if>
+			<if test="metroCard != null">`metro_card` = #{metroCard}, </if>
+			<if test="mobileno != null">`mobileNo` = #{mobileno}, </if>
+			<if test="candidateNo != null">`candidate_no` = #{candidateNo}, </if>
+			<if test="ticketNo != null">`ticket_no` = #{ticketNo}, </if>
+			<if test="localInstitution != null">`local_institution` = #{localInstitution}, </if>
+			<if test="nativePlace != null">`native_place` = #{nativePlace}, </if>
+			<if test="leagueTime != null">`league_time` = #{leagueTime}, </if>
+			<if test="partyTime != null">`party_time` = #{partyTime}, </if>
+			<if test="maritalStatus != null">`marital_status` = #{maritalStatus}, </if>
+			<if test="height != null">`height` = #{height}, </if>
+			<if test="weight != null">`weight` = #{weight}, </if>
+			<if test="nation != null">`nation` = #{nation}, </if>
+			<if test="politicalStatus != null">`political_status` = #{politicalStatus}, </if>
+			<if test="sourceCountry != null">`source_country` = #{sourceCountry}, </if>
+			<if test="registeredProvince != null">`registered_province` = #{registeredProvince}, </if>
+			<if test="registeredCity != null">`registered_city` = #{registeredCity}, </if>
+			<if test="registeredCounty != null">`registered_county` = #{registeredCounty}, </if>
+			<if test="domicilePlace != null">`domicile_place` = #{domicilePlace}, </if>
+			<if test="familyStreet != null">`family_street` = #{familyStreet}, </if>
+			<if test="townPoliceStation != null">`town_police_station` = #{townPoliceStation}, </if>
+			<if test="addressProvince != null">`address_province` = #{addressProvince}, </if>
+			<if test="addressCity != null">`address_city` = #{addressCity}, </if>
+			<if test="addressCounty != null">`address_county` = #{addressCounty}, </if>
+			<if test="address != null">`address` = #{address}, </if>
+			<if test="specialFamilyCircumstances != null">`special_family_circumstances` = #{specialFamilyCircumstances}, </if>
+			<if test="educatedChildren != null">`educated_children` = #{educatedChildren}, </if>
+			<if test="healthCondition != null">`health_condition` = #{healthCondition}, </if>
+			<if test="bloodType != null">`blood_type` = #{bloodType}, </if>
+			<if test="bankCard != null">`bank_card` = #{bankCard}, </if>
+			<if test="postalCodes != null">`postal_codes` = #{postalCodes}, </if>
+			<if test="emigrantcode != null">`emigrantCode` = #{emigrantcode}, </if>
+			<if test="householdRegistrationType != null">`household_registration_type` = #{householdRegistrationType}, </if>
+			<if test="speciality != null">`speciality` = #{speciality}, </if>
+			<if test="award != null">`award` = #{award}, </if>
+			<if test="postaladdress != null">`postalAddress` = #{postaladdress}, </if>
+			<if test="email != null">`email` = #{email}, </if>
+			<if test="postalcode != null">`postalCode` = #{postalcode}, </if>
+			<if test="otherWay != null">`other_way` = #{otherWay}, </if>
+			<if test="msn != null">`msn` = #{msn}, </if>
+			<if test="homepage != null">`homePage` = #{homepage}, </if>
+			<if test="qq != null">`qq` = #{qq}, </if>
+			<if test="homeAddress != null">`home_address` = #{homeAddress}, </if>
+			<if test="homePostal != null">`home_postal` = #{homePostal}, </if>
+			<if test="homePhone != null">`home_phone` = #{homePhone}, </if>
+			<if test="familyEmail != null">`family_email` = #{familyEmail}, </if>
+			<if test="arrival != null">`arrival` = #{arrival}, </if>
+			<if test="arrivalTime != null">`arrival_time` = #{arrivalTime}, </if>
+			<if test="arrivalFlight != null">`arrival_flight` = #{arrivalFlight}, </if>
+			<if test="selfMadeCar != null">`self_made_car` = #{selfMadeCar}, </if>
+			<if test="entourage != null">`entourage` = #{entourage}, </if>
+			<if test="nonResident != null">`non_resident` = #{nonResident}, </if>
+			<if test="bookLiving != null">`book_living` = #{bookLiving}, </if>
+			<if test="studentStatus != null">`student_status` = #{studentStatus}, </if>
+			<if test="studentCategory != null">`student_category` = #{studentCategory}, </if>
+			<if test="studentIdentity != null">`student_identity` = #{studentIdentity}, </if>
+			<if test="department != null">`department` = #{department}, </if>
+			<if test="grade != null">`grade` = #{grade}, </if>
+			<if test="profession != null">`profession` = #{profession}, </if>
+			<if test="stuClass != null">`stu_class` = #{stuClass}, </if>
+			<if test="bankAccountF != null">`bank_account_f` = #{bankAccountF}, </if>
+			<if test="bankAccountS != null">`bank_account_s` = #{bankAccountS}, </if>
+			<if test="bankAccount != null">`bank_account` = #{bankAccount}, </if>
+			<if test="bkss != null">`bkss` = #{bkss}, </if>
+			<if test="rxqdw != null">`rxqdw` = #{rxqdw}, </if>
+			<if test="rxrq != null">`rxrq` = #{rxrq}, </if>
+			<if test="rxnj != null">`rxnj` = #{rxnj}, </if>
+			<if test="rxyx != null">`rxyx` = #{rxyx}, </if>
+			<if test="rxzy != null">`rxzy` = #{rxzy}, </if>
+			<if test="rxfs != null">`rxfs` = #{rxfs}, </if>
+			<if test="pyfs != null">`pyfs` = #{pyfs}, </if>
+			<if test="xsly != null">`xsly` = #{xsly}, </if>
+			<if test="xq != null">`xq` = #{xq}, </if>
+			<if test="jdxw != null">`jdxw` = #{jdxw}, </if>
+			<if test="jdxl != null">`jdxl` = #{jdxl}, </if>
+			<if test="xz != null">`xz` = #{xz}, </if>
+			<if test="yjbynf != null">`yjbynf` = #{yjbynf}, </if>
+			<if test="sjbysj != null">`sjbysj` = #{sjbysj}, </if>
+			<if test="mobile != null">`mobile` = #{mobile}, </if>
+			<if test="zcxn != null">`zcxn` = #{zcxn}, </if>
+			<if test="zcxq != null">`zcxq` = #{zcxq}, </if>
+			<if test="zx != null">`zx` = #{zx}, </if>
+			<if test="zj != null">`zj` = #{zj}, </if>
+			<if test="gkcj != null">`gkcj` = #{gkcj}, </if>
+			<if test="remark != null">`remark` = #{remark}, </if>
+			<if test="jxxx != null">`jxxx` = #{jxxx}, </if>
+			<if test="bylx != null">`bylx` = #{bylx}, </if>
+			<if test="byzsbh != null">`byzsbh` = #{byzsbh}, </if>
+			<if test="kq != null">`kq` = #{kq}</if>
+		</set>
+		where id = #{id}
+	</update>
+	
+	<delete id="delete">
+		delete from sh_student where id = #{value}
+	</delete>
+	
+	<delete id="deleteBatch">
+		delete from sh_student where id in 
+		<foreach item="id" collection="array" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+
+</mapper>

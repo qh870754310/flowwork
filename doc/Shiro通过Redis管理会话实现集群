@@ -1,0 +1,74 @@
+流程概要说明
+
+1.Servlet容器在用户浏览器首次访问后会产生Session，并将Session的ID保存到Cookie中(浏览器不同key不一定相同)，
+同时Shiro会将该Session缓存到Redis中；
+
+2.用户登录认证成功后Shiro会修改Session属性，添加用户认证成功标识，并同步修改Redis中Session；
+
+3.用户发起请求后，Shiro会先判断本地EhCache缓存中是否存在该Session，如果有，直接从本地EhCache缓存中读取，
+如果没有再从Redis中读取Session，并在此时判断Session是否认证通过，如果认证通过将该Session缓存到本地EhCache中；
+
+4.如果Session发生改变，或被删除（用户退出登录），先对Redis中Session做相应修改（修改或删除）；
+再通过Redis消息通道发布缓存失效消息，通知其它节点EhCache失效。
+
+
+Shiro可以使用Shiro自己的Session或者自定义的Session来代替HttpSession
+
+一. SessionDao
+配置在sessionManager中，可选项，如果不修改默认使用MemorySessionDAO，即在本机内存中操作。
+
+如果想通过Redis管理Session，从这里入手。只需要实现类似DAO接口的CRUD即可。
+
+经过1：最开始通过继承AbstractSessionDAO实现，发现doReadSession方法调用过于频繁，所以改为通过集成CachingSessionDAO来实现。
+
+注意，本地缓存通过EhCache实现，失效时间一定要远小于Redis失效时间，这样本地失效后，会访问Redis读取，并重新设置Redis上会话数据的过期时间。
+
+
+
+因为Jedis API KEY和Value相同，同为String或同为byte[]为了方便扩展下面的方法
+
+import com.google.common.collect.Lists;
+import org.apache.commons.lang3.SerializationUtils;
+import org.apache.shiro.codec.Base64;
+import org.apache.shiro.session.Session;
+
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.List;
+
+public class SerializeUtils extends SerializationUtils {
+
+    public static String serializeToString(Serializable obj) {
+        try {
+            byte[] value = serialize(obj);
+            return Base64.encodeToString(value);
+        } catch (Exception e) {
+            throw new RuntimeException("serialize session error", e);
+        }
+    }
+
+    public static <T> T deserializeFromString(String base64) {
+        try {
+            byte[] objectData = Base64.decode(base64);
+            return deserialize(objectData);
+        } catch (Exception e) {
+            throw new RuntimeException("deserialize session error", e);
+        }
+    }
+
+    public static <T> Collection<T> deserializeFromStringController(Collection<String> base64s) {
+        try {
+            List<T> list = Lists.newLinkedList();
+            for (String base64 : base64s) {
+                byte[] objectData = Base64.decode(base64);
+                T t = deserialize(objectData);
+                list.add(t);
+            }
+            return list;
+        } catch (Exception e) {
+            throw new RuntimeException("deserialize session error", e);
+        }
+    }
+}
+
+

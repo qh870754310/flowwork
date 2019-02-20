@@ -1,0 +1,466 @@
+在集群环境中，session共享一般通过应用服务器的session复制或者存储在公用的缓存服务器上，本文主要介绍通过Shiro管理session，
+并将session缓存到redis中，这样可以在集群中使用。
+
+Shiro除了在管理session上使用redis，也可以缓存用户权限，即cacheManager可以通过redis来扩展。
+下面从cacheManager 和 sessionManager这两部分讲解Shiro与Redis的集成
+
+shiro是通过SessionManager来管理Session的，而对于Session的操作则是通过SessionDao来实现的，
+默认的情况下，shiro实现了两种SessionDao，分别为CachingSessionDAO和MemorySessionDAO，
+当我们使用EhCache缓存时，则是使用的CachingSessionDAO，不适用缓存的情况下，
+就会选择基于内存的SessionDao.所以，如果我们想实现基于Redis的分布式Session共享，重点在于重写SessionManager中的SessionDao
+
+spring-shiro.xml配置
+
+<bean id="cacheManager" class="com.cnpc.framework.base.pojo.RedisCacheManager"/>
+    <bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+        <property name="realm" ref="adminRealm"/>
+        <property name="cacheManager" ref="cacheManager"/>
+        <!--将session托管给redis进行管理，便于搭建集群系统-->
+        <property name="sessionManager" ref="webSessionManager"/>
+    </bean>
+    <!--redis管理session-->
+    <bean id="webSessionManager" class="org.apache.shiro.web.session.mgt.DefaultWebSessionManager">
+        <property name="sessionDAO" ref="redisSessionDao"/>
+        <property name="deleteInvalidSessions" value="true"/>
+        <property name="globalSessionTimeout" value="${shiro.session.timeout}"/>
+        <property name="sessionIdCookie" ref="sharesession"/>
+        <property name="sessionIdUrlRewritingEnabled" value="false"/>
+        <!-- 定时检查失效的session -->
+        <property name="sessionValidationSchedulerEnabled" value="true"/>
+    </bean>
+
+    <!-- sessionIdCookie的实现,用于重写覆盖容器默认的JSESSIONID -->
+    <bean id="sharesession" class="org.apache.shiro.web.servlet.SimpleCookie">
+        <!-- cookie的name,对应的默认是 JSESSIONID -->
+        <constructor-arg name="name" value="SHAREJSESSIONID"/>
+        <!-- jsessionId的path为 / 用于多个系统共享jsessionId -->
+        <property name="path" value="/"/>
+    </bean>
+
+    <bean id="redisSessionDao" class="com.cnpc.framework.base.pojo.RedisSessionDao">
+        <property name="expire" value="${shiro.session.timeout}"/>
+    </bean>
+
+    Shiro和Redis共同托管session
+    由Redis来管理session，包括session创建、读取、删除等，还可以统计在线用户，下面是核心代码RedisSessionDao的实现：
+    import com.cnpc.framework.base.dao.RedisDao;
+    import com.cnpc.framework.base.entity.BaseEntity;
+    import com.cnpc.framework.constant.RedisConstant;
+    import com.cnpc.framework.utils.StrUtil;
+    import org.apache.shiro.SecurityUtils;
+    import org.apache.shiro.session.Session;
+    import org.apache.shiro.session.UnknownSessionException;
+    import org.apache.shiro.session.mgt.eis.AbstractSessionDAO;
+    import org.apache.shiro.subject.SimplePrincipalCollection;
+    import org.slf4j.Logger;
+    import org.slf4j.LoggerFactory;
+    import org.springframework.util.SerializationUtils;
+
+    import javax.annotation.Resource;
+    import java.io.Serializable;
+    import java.io.UnsupportedEncodingException;
+    import java.util.Collection;
+    import java.util.HashSet;
+    import java.util.Set;
+
+    /**
+     * Created by billJiang on 2017/4/13.
+     * e-mail:475572229@qq.com  qq:475572229
+     * 通过如下方式调用
+     * RedisSessionDao redisSession = (RedisSessionDao)SpringContextUtil.getBean("redisSessionDao");
+     */
+    //@Service("redisSessionDao")
+    public class RedisSessionDao extends AbstractSessionDAO {
+
+        private static Logger logger = LoggerFactory.getLogger(RedisSessionDao.class);
+
+        private long expire;
+
+        @Resource
+        private RedisDao redisDao;
+
+        @Override
+        protected Serializable doCreate(Session session) {
+            Serializable sessionId = this.generateSessionId(session);
+            this.assignSessionId(session, sessionId);
+            this.saveSession(session);
+            return sessionId;
+        }
+
+        @Override
+        protected Session doReadSession(Serializable sessionId) {
+            if (sessionId == null) {
+                logger.error("session id is null");
+                return null;
+            }
+
+            logger.debug("Read Redis.SessionId=" + new String(getKey(RedisConstant.SHIRO_REDIS_SESSION_PRE, sessionId.toString())));
+
+            Session session = (Session) SerializationUtils.deserialize(redisDao.getByte(getKey(RedisConstant.SHIRO_REDIS_SESSION_PRE, sessionId.toString())));
+            return session;
+        }
+
+        @Override
+        public void update(Session session) throws UnknownSessionException {
+            this.saveSession(session);
+        }
+
+        int i=0;
+        public void saveSession(Session session) {
+            if (session == null || session.getId() == null) {
+                logger.error("session or session id is null");
+                return;
+            }
+            session.setTimeout(expire);
+            long timeout = expire / 1000;
+            //保存用户会话
+            redisDao.add(this.getKey(RedisConstant.SHIRO_REDIS_SESSION_PRE, session.getId().toString()), timeout, SerializationUtils.serialize(session));
+            //获取用户id
+            String uid = getUserId(session);
+            if (!StrUtil.isEmpty(uid)) {
+                //保存用户会话对应的UID
+                try {
+                    redisDao.add(this.getKey(RedisConstant.SHIRO_SESSION_PRE, session.getId().toString()), timeout, uid.getBytes("UTF-8"));
+                    //保存在线UID
+                    redisDao.add(this.getKey(RedisConstant.UID_PRE, uid), timeout, ("online"+(i++)+"").getBytes("UTF-8"));
+                } catch (UnsupportedEncodingException ex) {
+                    logger.error("getBytes error:" + ex.getMessage());
+                }
+            }
+
+        }
+
+
+        public String getUserId(Session session) {
+            SimplePrincipalCollection pricipal = (SimplePrincipalCollection) session.getAttribute("org.apache.shiro.subject.support.DefaultSubjectContext_PRINCIPALS_SESSION_KEY");
+            if (null != pricipal) {
+                return pricipal.getPrimaryPrincipal().toString();
+            }
+            return null;
+        }
+
+        public String getKey(String prefix, String keyStr) {
+            return prefix + keyStr;
+        }
+
+        @Override
+        public void delete(Session session) {
+            if (session == null || session.getId() == null) {
+                logger.error("session or session id is null");
+                return;
+            }
+            //删除用户会话
+            redisDao.delete(this.getKey(RedisConstant.SHIRO_REDIS_SESSION_PRE, session.getId().toString()));
+            //获取缓存的用户会话对应的UID
+            String uid = redisDao.get(this.getKey(RedisConstant.SHIRO_SESSION_PRE, session.getId().toString()));
+            //删除用户会话sessionid对应的uid
+            redisDao.delete(this.getKey(RedisConstant.SHIRO_SESSION_PRE, session.getId().toString()));
+            //删除在线uid
+            redisDao.delete(this.getKey(RedisConstant.UID_PRE, uid));
+            //删除用户缓存的角色
+            redisDao.delete(this.getKey(RedisConstant.ROLE_PRE, uid));
+            //删除用户缓存的权限
+            redisDao.delete(this.getKey(RedisConstant.PERMISSION_PRE, uid));
+        }
+
+        @Override
+        public Collection<Session> getActiveSessions() {
+            Set<Session> sessions = new HashSet<>();
+
+            Set<String> keys = redisDao.keys(RedisConstant.SHIRO_REDIS_SESSION_PRE + "*");
+            if (keys != null && keys.size() > 0) {
+                for (String key : keys) {
+                    Session s = (Session) SerializationUtils.deserialize(redisDao.getByte(key));
+                    sessions.add(s);
+                }
+            }
+            return sessions;
+        }
+
+        /**
+         * 当前用户是否在线
+         *
+         * @param uid 用户id
+         * @return
+         */
+        public boolean isOnLine(String uid) {
+            Set<String> keys = redisDao.keys(RedisConstant.UID_PRE + uid);
+            if (keys != null && keys.size() > 0) {
+                return true;
+            }
+            return false;
+        }
+
+        public long getExpire() {
+            return expire;
+        }
+
+        public void setExpire(long expire) {
+            this.expire = expire;
+        }
+    }
+
+
+    Redis缓存用户权限
+    在realm的doGetAuthorizationInfo中，获取的SimpleAuthorizationInfo authorizationInfo会存在缓存中，本文也用Redis进行缓存；
+    @Override
+        protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principals) {
+
+            // 因为非正常退出，即没有显式调用 SecurityUtils.getSubject().logout()
+            // (可能是关闭浏览器，或超时)，但此时缓存依旧存在(principals)，所以会自己跑到授权方法里。
+            if (!SecurityUtils.getSubject().isAuthenticated()) {
+                doClearCache(principals);
+                SecurityUtils.getSubject().logout();
+                return null;
+            }
+
+            if (principals == null) {
+                throw new AuthorizationException("parameters principals is null");
+            }
+            //获取已认证的用户名（登录名）
+            String userId=(String)super.getAvailablePrincipal(principals);
+            if(StrUtil.isEmpty(userId)){
+                return null;
+            }
+            Set<String> roleCodes=roleService.getRoleCodeSet(userId);
+            //默认用户拥有所有权限
+            Set<String> functionCodes=functionService.getAllFunctionCode();
+           /* Set<String> functionCodes=functionService.getFunctionCodeSet(roleCodes);*/
+            SimpleAuthorizationInfo authorizationInfo=new SimpleAuthorizationInfo();
+            authorizationInfo.setRoles(roleCodes);
+            authorizationInfo.setStringPermissions(functionCodes);
+            return authorizationInfo;
+        }
+
+        RedisCacheManager.java实现
+        import com.cnpc.framework.base.dao.RedisDao;
+        import org.apache.shiro.cache.Cache;
+        import org.apache.shiro.cache.CacheException;
+        import org.apache.shiro.cache.CacheManager;
+        import org.slf4j.Logger;
+        import org.slf4j.LoggerFactory;
+
+        import javax.annotation.Resource;
+        import java.util.concurrent.ConcurrentHashMap;
+        import java.util.concurrent.ConcurrentMap;
+
+        /**
+         * Created by billJiang on 2017/4/15.
+         * e-mail:475572229@qq.com  qq:475572229
+         */
+        public class RedisCacheManager implements CacheManager {
+
+            private static final Logger logger = LoggerFactory.getLogger(RedisCacheManager.class);
+
+            // fast lookup by name map
+            private final ConcurrentMap<String, Cache> caches = new ConcurrentHashMap<String, Cache>();
+
+            @Resource
+            private RedisDao redisDao;
+
+            public <K, V> Cache<K, V> getCache(String name) throws CacheException {
+                logger.debug("获取名称为: " + name + " 的RedisCache实例");
+                Cache c = caches.get(name);
+                if (c == null) {
+                    c = new RedisCache<K, V>(redisDao);
+                    caches.put(name, c);
+                }
+                return c;
+            }
+        }
+
+        RedisCache.java实现
+        import com.cnpc.framework.base.dao.RedisDao;
+        import org.apache.shiro.cache.Cache;
+        import org.apache.shiro.cache.CacheException;
+        import org.apache.shiro.util.CollectionUtils;
+        import org.slf4j.Logger;
+        import org.slf4j.LoggerFactory;
+        import org.springframework.util.SerializationUtils;
+
+        import java.util.*;
+
+        /**
+         * Created by billJiang on 2017/4/15.
+         * e-mail:475572229@qq.com  qq:475572229
+         */
+        public class RedisCache<K, V> implements Cache<K, V> {
+
+            private Logger logger = LoggerFactory.getLogger(this.getClass());
+
+            /**
+             * The wrapped Jedis instance.
+             */
+            //private RedisManager redisDao;
+            private RedisDao redisDao;
+
+            /**
+             * The Redis key prefix for the sessions
+             */
+            private String keyPrefix = "shiro_redis_session:";
+
+            /**
+             * Returns the Redis session keys
+             * prefix.
+             *
+             * @return The prefix
+             */
+            public String getKeyPrefix() {
+                return keyPrefix;
+            }
+
+            /**
+             * Sets the Redis sessions key
+             * prefix.
+             *
+             * @param keyPrefix The prefix
+             */
+            public void setKeyPrefix(String keyPrefix) {
+                this.keyPrefix = keyPrefix;
+            }
+
+            /**
+             * 通过一个JedisManager实例构造RedisCache
+             */
+            public RedisCache(RedisDao redisDao) {
+                if (redisDao == null) {
+                    throw new IllegalArgumentException("Cache argument cannot be null.");
+                }
+                this.redisDao = redisDao;
+            }
+
+            /**
+             * Constructs a redisDao instance with the specified
+             * Redis manager and using a custom key prefix.
+             *
+             * @param redisDao  The redisDao manager instance
+             * @param prefix The Redis key prefix
+             */
+            public RedisCache(RedisDao redisDao,
+                              String prefix) {
+
+                this(redisDao);
+
+                // set the prefix
+                this.keyPrefix = prefix;
+            }
+
+            /**
+             * 获得byte[]型的key
+             *
+             * @param key
+             * @return
+             */
+            private byte[] getByteKey(K key) {
+                if (key instanceof String) {
+                    String preKey = this.keyPrefix + key;
+                    return preKey.getBytes();
+                } else {
+                    return SerializationUtils.serialize(key);
+                }
+            }
+
+            @Override
+            public V get(K key) throws CacheException {
+                logger.debug("根据key从Redis中获取对象 key [" + key + "]");
+                try {
+                    if (key == null) {
+                        return null;
+                    } else {
+                        byte[] rawValue = redisDao.getByte(key.toString());
+                        @SuppressWarnings("unchecked")
+                        V value = (V) SerializationUtils.deserialize(rawValue);
+                        return value;
+                    }
+                } catch (Throwable t) {
+                    throw new CacheException(t);
+                }
+
+            }
+
+            @Override
+            public V put(K key, V value) throws CacheException {
+                logger.debug("根据key从存储 key [" + key + "]");
+                try {
+                    redisDao.set(key.toString(), SerializationUtils.serialize(value));
+                    return value;
+                } catch (Throwable t) {
+                    throw new CacheException(t);
+                }
+            }
+
+            @Override
+            public V remove(K key) throws CacheException {
+                logger.debug("从redis中删除 key [" + key + "]");
+                try {
+                    V previous = get(key);
+                    redisDao.delete(key.toString());
+                    return previous;
+                } catch (Throwable t) {
+                    throw new CacheException(t);
+                }
+            }
+
+            @Override
+            public void clear() throws CacheException {
+                logger.debug("从redis中删除所有元素");
+                try {
+                    redisDao.flushDB();
+                } catch (Throwable t) {
+                    throw new CacheException(t);
+                }
+            }
+
+            @Override
+            public int size() {
+                try {
+                    Long longSize = new Long(redisDao.dbSize());
+                    return longSize.intValue();
+                } catch (Throwable t) {
+                    throw new CacheException(t);
+                }
+            }
+
+            @SuppressWarnings("unchecked")
+            @Override
+            public Set<K> keys() {
+                try {
+                    Set<String> keys = redisDao.keys(this.keyPrefix + "*");
+                    if (CollectionUtils.isEmpty(keys)) {
+                        return Collections.emptySet();
+                    } else {
+                        Set<K> newKeys = new HashSet<K>();
+                        for (String key : keys) {
+                            newKeys.add((K) key);
+                        }
+                        return newKeys;
+                    }
+                } catch (Throwable t) {
+                    throw new CacheException(t);
+                }
+            }
+
+            @Override
+            public Collection<V> values() {
+                try {
+                    Set<String> keys = redisDao.keys(this.keyPrefix + "*");
+                    if (!CollectionUtils.isEmpty(keys)) {
+                        List<V> values = new ArrayList<V>(keys.size());
+                        for (String key : keys) {
+                            @SuppressWarnings("unchecked")
+                            V value = get((K) key);
+                            if (value != null) {
+                                values.add(value);
+                            }
+                        }
+                        return Collections.unmodifiableList(values);
+                    } else {
+                        return Collections.emptyList();
+                    }
+                } catch (Throwable t) {
+                    throw new CacheException(t);
+                }
+            }
+        }
+
+        通过以上代码实现了Shiro和Redis的集成，Redis缓存了用户session和权限信息authorizationInfo。

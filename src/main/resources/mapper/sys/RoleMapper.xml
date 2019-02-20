@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.qh.modules.sys.dao.RoleDao">
+
+    <resultMap id="roleMap" type="com.qh.modules.sys.entity.RoleEntity">
+        <result property="id" column="id"/>
+        <result property="bapid" column="bapid"/>
+        <result property="baid" column="baid"/>
+        <result property="name" column="name"/>
+        <result property="code" column="code"/>
+        <result property="status" column="status"/>
+        <result property="roleType" column="role_type"/>
+        <result property="remark" column="remark"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="updateId" column="update_id"/>
+        <result property="createId" column="create_id"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, bapid, baid, name, code, status, role_type, remark, update_time, update_id, create_id, create_time
+    </sql>
+
+    <!-- 批量保存组织机构与角色关系表 -->
+    <insert id="batchSaveRoleOrgan" parameterType="map">
+        insert into sys_organ_role
+        (organ_id, role_id)
+        values
+        <foreach collection="organIdList" separator="," item="item" index="index">
+            (#{item}, #{role_id})
+        </foreach>
+    </insert>
+
+    <!-- 批量更新角色状态 -->
+    <update id="updateBatchStatus">
+        update sys_role
+        set status = #{status}
+        where id in 
+        <foreach collection="ids" item="id" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="queryObject" resultType="com.qh.modules.sys.entity.RoleEntity" resultMap="roleMap">
+         select
+         <include refid="Base_Column_List"/>
+        from sys_role
+        where id = #{id}
+    </select>
+
+    <!-- 根据角色id删除角色和组织关系表 -->
+    <delete id="delRoleOrganByRoleId">
+        delete from sys_organ_role where role_id = #{roleId}
+    </delete>
+    <!-- 根据用户查询角色集合 -->
+
+    <select id="queryByUserId" resultType="com.qh.modules.sys.entity.RoleEntity" resultMap="roleMap">
+        select
+		r.id,r.name,r.code,r.status
+		from sys_user_role ur
+		LEFT JOIN sys_role r ON ur.role_id=r.id
+		where ur.user_id = #{userId} AND r.status = #{status}
+    </select>
+
+    <!--根据角色id查询可用的组织机构-->
+    <select id="queryPageByDto" resultType="com.qh.modules.sys.entity.UserWindowDto">
+        select
+            id, name, bapid
+        from sys_role
+        where 1=1
+        <if test="name != null and name != ''">
+            and name like concat('%', #{name}, '%')
+        </if>
+    </select>
+
+    <!-- 根据角色id查询可用的组织机构 -->
+    <select id="queryOrganRoleByRoleId" resultType="java.lang.String">
+        select orl.organ_id as id
+        from sys_organ_role orl
+        left join sys_organ o on o.id = orl.organ_id
+        where orl.role_id = #{roleId} and o.is_del = #{isDel}
+    </select>
+
+    <select id="queryList" resultType="com.qh.modules.sys.entity.RoleEntity" resultMap="roleMap">
+        select
+        <include refid="Base_Column_List"/>
+        from sys_role
+        where 1=1
+        <if test="name != null and name.trim() != ''">
+            and name like concat('%', #{name}, '%')
+        </if>
+        <if test="createUserId != null and createUserId != ''">
+            and create_id = #{createUserId}
+        </if>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by id desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int">
+        select count(*) from sys_role
+    </select>
+
+    <insert id="save" parameterType="com.qh.modules.sys.entity.RoleEntity">
+        insert into sys_role
+        (id, bapid, name, code, status, role_type, remark, update_time, create_time, update_id, create_id, baid)
+        values
+        (#{id}, #{bapid}, #{name}, #{code}, #{status}, #{roleType}, #{remark}, #{updateTime}, #{createTime}, #{updateId}, #{createId}, #{baid})
+    </insert>
+
+    <update id="update" parameterType="com.qh.modules.sys.entity.RoleEntity">
+        update sys_role
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="code != null">code = #{code},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="roleType != null">role_type = #{roleType},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateId != null">update_id = #{updateId},</if>
+            <if test="createId != null">create_id = #{createId}</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <delete id="delete">
+        delete from sys_role where id = #{id}
+    </delete>
+    
+    <delete id="deleteBatch">
+        delete from sys_role where id in
+        <foreach collection="array" item="roleId" open="(" separator="," close=")">
+            #{roleId}
+        </foreach>
+    </delete>
+</mapper>
